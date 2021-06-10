@@ -19,42 +19,43 @@ Cabin::Cabin(QObject *parent)
 
 void Cabin::cabin_moving()
 {
-    status = MOVING;
-    qDebug() << "\tКабина направляется на " << need_floor << " этаж";
-    move_timer.start(MOVE_SLEEP);
+    if (status == GET) {
+        status = MOVING;
+        qDebug() << "Лифт едет" << ((direction == UP) ? "наверх" : "вниз");
+        move_timer.start(MOVE_SLEEP);
+    }
 }
 
 void Cabin::cabin_stopped()
 {
-    qDebug() << "\tКабина ждет двери";
-    status = WAITING_DOORS;
-    move_timer.stop();
-    current_floor += direction;
-    if (current_floor != need_floor) {
-        emit free_signal();
-    } else {
-        emit open_doors_signal();
+    if (status == MOVING || status == GET) {
+        status = WAITING_DOORS;
+        move_timer.stop();
+        current_floor += direction;
+        qDebug() << "Лифт на" << current_floor << "этаже";
+        if (current_floor != need_floor)
+            emit free_signal();
+        else
+            emit open_doors_signal();
     }
 }
 
-void Cabin::cabin_take_target(ssize_t floor)
+void Cabin::cabin_take_target(int floor, direction_t direction_)
 {
     status = GET;
     need_floor = floor;
-    direction = STOP;
-    qDebug() << "\tКабина получила таргет этаж - " << floor;
-    if (current_floor == need_floor) {
+    direction = direction_;
+    if (current_floor == need_floor)
         emit stop_cabin();
-    } else {
-        direction = need_floor > current_floor ? UP : DOWN;
+    else
         emit moving_signal();
-    }
 }
 
 void Cabin::cabin_free()
 {
-    qDebug() << "\tКабина завершила цикл - этаж " << current_floor;
-    status = FREE;
-    emit request_target(current_floor);
+    if (status != FREE) {
+        status = FREE;
+        emit request_target(current_floor);
+    }
 }
 

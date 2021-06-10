@@ -5,21 +5,14 @@
 
 Controller::Controller(QWidget *parent) : QWidget(parent)
 {
+    current_floor = 1;
+    target_floor = 0;
+    status = FREE;
+
     this->layout = std::make_unique<QVBoxLayout>();
     this->setLayout(this->layout.get());
-    status = FREE;
     QObject::connect(this, SIGNAL(no_target_signal()), this, SLOT(no_target()));
-    QObject::connect(this, SIGNAL(at_floor_signal(ssize_t)), this, SLOT(update_target(ssize_t)));
-
-
-
-//    display = std::shared_ptr<Display>(new Display);
-//    layout->addWidget(dynamic_cast<QLabel *>(display.get()));
-//    QObject::connect(this, SIGNAL(passed_floor_signal(ssize_t, direction_t)), display.get(),
-//                     SLOT(passed_floor(ssize_t, direction_t)));
-//    QObject::connect(this, SIGNAL(stopped_signal(bool, ssize_t)), display.get(), SLOT(stop()));
-//    QObject::connect(this, SIGNAL(free_signal()), display.get(), SLOT(on_free()));
-
+    QObject::connect(this, SIGNAL(at_floor_signal(int)), this, SLOT(update_target(int)));
 
     for (int i = 0; i < FLOORS; i++) {
         std::shared_ptr<Button> btn(new Button);
@@ -30,114 +23,83 @@ Controller::Controller(QWidget *parent) : QWidget(parent)
         layout->addWidget(dynamic_cast<QPushButton *>(btn.get()));
 
         visited_floors.push_back(true);
-        QObject::connect(btn.get(), SIGNAL(floor_pressed(ssize_t)), this, SLOT(new_target(ssize_t)));
+        QObject::connect(btn.get(), SIGNAL(floor_pressed(int)), this, SLOT(new_target(int)));
     }
 }
 
-void Controller::new_target(ssize_t floor)
+void Controller::new_target(int floor)
 {
-    qDebug() << "Контроллер получил новый этаж - " << floor;
     controller_status old_status = status;
     status = NEW_TARGET;
     visited_floors[floor - 1] = false;
-//    target_exist(floor);
-//    this->needed_floor = floor;
     if (old_status == FREE)
-        emit at_floor_signal(current_floor + 1);
+        emit at_floor_signal(current_floor);
 }
 
-void Controller::update_target(ssize_t floor)
+void Controller::update_target(int floor)
 {
-    qDebug() << "Контроллер обновляет этаж";
-    controller_status old_status = status;
-    status = BUSY;
-    current_floor = floor;
-    if (current_floor == next_target || old_status != BUSY) {
-        if (current_floor == next_target) {
-            emit this->buttons.at(floor - 1)->unpress_signal();
-            visited_floors[floor - 1] = true;
+    if (status != FREE) {
+        current_floor = floor;
+        if (current_floor == target_floor || status != BUSY) {
+            if (current_floor == target_floor) {
+                emit this->buttons.at(floor - 1)->unpress_signal();
+                visited_floors[floor - 1] = true;
+            }
+            update_direction();
         }
-        if (direction != DOWN)
-        {
-            direction = STOP;
-            for (next_target = current_floor; next_target <= FLOORS; ++next_target)
-                if (!visited_floors[next_target - 1])
-                {
-                    direction = UP;
-                    break;
-                }
-        }
-        if (direction != UP)
-        {
-            direction = STOP;
-            for (next_target = current_floor - 1; next_target > 0; --next_target)
-                if (!visited_floors[next_target - 1])
-                {
-                    direction = DOWN;
-                    break;
-                }
+        status = BUSY;
+        if (direction == STOP)
+            emit no_target_signal();
+        else {
+            if (target_floor == current_floor)
+                direction = STOP;
+            emit target_setted(target_floor, direction);
         }
     }
-    if (direction == STOP)
-        emit no_target_signal();
-    else
-        emit target_setted(next_target);
-//    else
-//        emit
-
-
-//    if (status == BUSY) {
-//        this->current_floor = floor;
-//        this->direction = direction_;
-//        emit passed_floor_signal(floor, direction);
-//
-//        if (current_floor == needed_floor) {
-//            qDebug() << "Лифт остановился на этаже: " << floor;
-//
-//            emit this->buttons.at(floor - 1)->unpress_signal();
-//            this->visited_floors[floor - 1] = true;
-//
-//            if (target_exist(floor)) {
-//                this->needed_floor = floor;
-//                emit stopped_signal(false, floor);
-//            } else {
-//                this->status = FREE;
-//                emit stopped_signal(true);
-//            }
-//        }
-//    }
 }
-
-
-//bool Controller::target_exist(ssize_t &new_floor)
-//{
-//    int direction = direction != STOP ? direction : DOWN;
-//
-//    for (int i = current_floor - 1; i >= 0 && i < FLOORS; i += direction) {
-//        if (!visited_floors[i]) {
-//            new_floor = i + 1;
-//            return true;
-//        }
-//    }
-//
-//    for (int i = current_floor - 1; i >= 0 && i < FLOORS; i += -direction) {
-//        if (!visited_floors[i]) {
-//            new_floor = i + 1;
-//            return true;
-//        }
-//    }
-//
-//    return false;
-//}
 
 void Controller::no_target()
 {
-    status = FREE;
-    qDebug() << "Контроллер бездействует";
+    if (status != FREE) {
+        status = FREE;
+        target_floor = 0;
+        qDebug() << "Лифт бездействует";
+    }
 }
 
-//void Controller::on_free()
-//{
-//    status = ENDS;
-//    emit free_signal();
-//}
+void Controller::update_direction()
+{
+    direction_t old_direction = direction;
+    direction = STOP;
+    if (old_direction != UP)
+    {
+        update_direction_down();
+        if (direction == STOP)
+            update_direction_up();
+    } else {
+        update_direction_up();
+        if (direction == STOP)
+            update_direction_down();
+    }
+
+}
+
+void Controller::update_direction_up()
+{
+    for (target_floor = current_floor; target_floor <= FLOORS; ++target_floor)
+        if (!visited_floors[target_floor - 1])
+        {
+            direction = UP;
+            break;
+        }
+}
+
+void Controller::update_direction_down()
+{
+    for (target_floor = current_floor - 1; target_floor > 0; --target_floor)
+        if (!visited_floors[target_floor - 1])
+        {
+            direction = DOWN;
+            break;
+        }
+}

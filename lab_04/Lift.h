@@ -5,6 +5,7 @@
 
 #include "Controller.h"
 #include "Cabin.h"
+#include "direction_t.h"
 
 class Lift : public QObject
 {

@@ -6,4 +6,4 @@ enum direction_t
     STOP = 0,
     UP = 1
 };
-#endif //LAB_04_DIRECTION_T_H
+#endif

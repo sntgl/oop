@@ -9,7 +9,7 @@ Button::Button(QWidget *parrent) : QPushButton(parrent)
     this->button_floor = 1;
 }
 
-void Button::set_floor(const ssize_t &floor)
+void Button::set_floor(const int &floor)
 {
     this->button_floor = floor;
 }
