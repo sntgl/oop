@@ -1,3 +1,5 @@
 */cmake-build-debug/*
 *.out
 *.exe
+*.idea/*
+*.idea/
