@@ -12,22 +12,11 @@ Door::Door()
 
 void Door::opening()
 {
-    if (status == CLOSED)
+    if (status == CLOSED && status != OPENING) // double check to make sure
     {
         qDebug() << "\t\tДвери - начинаю открывать";
-
-        if (status == CLOSED)
-        {
-            status = OPENING;
-            opening_timer.start(DOOR_SLEEP);
-        }
-        else
-        {
-            status = OPENING;
-            auto timer = closing_timer.remainingTime();
-            closing_timer.stop();
-            opening_timer.start(DOOR_SLEEP - timer);
-        }
+        status = OPENING;
+        opening_timer.start(DOOR_SLEEP);
     }
 }
 

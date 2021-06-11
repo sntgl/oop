@@ -25,4 +25,4 @@ private:
     std::unique_ptr<QVBoxLayout> layout;
     Lift lift;
 };
-#endif // MAINWINDOW_H
+#endif

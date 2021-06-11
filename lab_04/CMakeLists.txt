@@ -1,4 +1,5 @@
-set(CMAKE_PREFIX_PATH "//Users//sntgl//Qt//6.1.0//clang_64//lib//cmake")
+#set(CMAKE_PREFIX_PATH "//Users//sntgl//Qt//6.1.0//clang_64//lib//cmake")
+set(CMAKE_PREFIX_PATH "//Users//sntgl//Qt5//5.12.11//clang_64//lib//cmake")
 
 cmake_minimum_required(VERSION 3.1.0)
 
@@ -17,7 +18,7 @@ if(CMAKE_VERSION VERSION_LESS "3.7.0")
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
 
-find_package(Qt6 COMPONENTS Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 cmake_minimum_required(VERSION 3.19)
 project(lab_04)
@@ -42,4 +43,4 @@ add_executable(lab_04
         mainwindow.h
         direction_t.h)
 
-target_link_libraries(lab_04 Qt6::Widgets)
+target_link_libraries(lab_04 Qt5::Widgets)
